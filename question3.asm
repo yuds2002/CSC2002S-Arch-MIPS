@@ -1,6 +1,6 @@
 .data       #Declare memory and constants
-    cells:  .space 1024
-    input: .space 1024
+    cells:  .space 2000
+    input: .space 2000
     prompt:  .asciiz "Enter n and formulae:\n"
     num_words: .word 5
     val:    .asciiz "The values are:\n"
@@ -39,16 +39,19 @@ while:
     li      $v0, 8
     syscall
     
-
-    lb		$s1, 0($a0)		
-    beq		$s1, '=', equals	
     
-    jal		get_int			# jump to sum and save position to $ra
-    
-    
-
     sw		$a0, cells($s0)
     add		$s0, $s0, 4		# $s0 = $s0 + 4
+
+    lb		$s1, 0($a0)		
+    beq		$s1, '=', equals
+
+    jal		get_int			# jump to sum and save position to $ra
+    j		return_here				# jump to retun_here
+    
+    
+return_here:
+
     
     add     $t1, $t1, 4     # t1 = address of inputs
 
@@ -72,19 +75,40 @@ sum:
     jr		$ra			    # jump to $ra
     
 
+
 equals:
+    move    $s7, $ra
     add     $a0, $a0, 1
     jal		get_equal_num				# jump to get_equal_num and save position to $ra
     mul     $t7, $t7, 4
-    j		exit			# jump to exit
+    lw		$s2, cells($t7)
     
+    
+    sub     $s3, $s0, 4
+
+    sw      $s2, cells($s3)
+    move    $a0, $s2
+    jal		add_equal_num				# jump to add_equal_num and save position to $ra
+    
+    add     $t4, $t4, $t6
+    li      $t6, 0
+    li      $t7,0
+    #li      $v0, 4
+    #syscall
+    
+    j		return_here				# jump to return_here
+    
+    
+    
+
+
 
 get_equal_num:
     lb		$s1, 0($a0)
     beq		$s1, '\n', jump_equal
     sub     $s1, $s1, 48
-    mul     $t9, $t9, 10
-    add     $t9, $t9, $s1
+    mul     $t7, $t7, 10
+    add     $t7, $t7, $s1
     add     $a0, $a0, 1
     j		get_equal_num			
 
@@ -92,15 +116,45 @@ jump_equal:
     jr		$ra					# jump to $ra
     
 
+add_equal_num:
+    lb		$s1, 0($s2)
+    beq		$s1, '\n', jump_equal	# if $s1 == '\n' then jump equal
+    sub     $s1, $s1, 48
+    mul     $t6, $t6, 10
+    add     $t6, $t6, $s1
+    add     $s2, $s2, 1
+    j		add_equal_num
+    
+
+
+
 exit:
-    move 	$a0, $t4		# $a0 = $t4
+    li		$v0, 4		# $v0 = 4
+    la      $a0, val
+    syscall
+
+    jal     print_all
+
+    move    $a0, $t4
     li      $v0, 1
     syscall
-    
 
     li		$v0, 10
     syscall
     
     
 
+print_all:
+    beq		$s5, $s0, print_jump_to_exit	# if $s5 == $s0 then print_jump_to_exit
+    li      $v0, 4
+    lw		$a0, cells($s5)		#
+    syscall
+    add     $s5, $s5, 4
+    j		print_all				# jump to print_all
+     
+    
+
+
+print_jump_to_exit:
+    jr		$ra					# jump to $ra
     
